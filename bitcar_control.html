@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            background-image: url('img/background/background3.jpg');
+            background-size: cover;
+            backdrop-filter: blur(30px);
+        }
+        .container {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            position: absolute;
+            cursor: grab;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .card {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .button, .close-button {
+            font-size: 48px;
+            color: white;
+            cursor: pointer;
+            user-select: none;
+        }
+        .slider {
+            width: 100%;
+        }
+        .value {
+            font-size: 18px;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .icon-buttons-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+        }
+        .icon-button {
+            background-size: contain;
+            background-color: rgba(0,0,0,0);
+            width: 48px;
+            height: 48px;
+            border: none;
+            cursor: pointer;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            position: relative;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .modal-content img {
+            width: 100px;
+            margin: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 5px;
+        }
+        .modal-content img:hover {
+            border-color: #3498db;
+        }
+        .modal-music-content div, .modal-background-content div {
+            cursor: pointer;
+            padding: 10px;
+            margin: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        .modal-music-content div:hover, .modal-background-content div:hover {
+            border-color: #3498db;
+        }
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 32px;
+            color: #000;
+            cursor: pointer;
+        }
+
+        .modal-text {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14;
+        }
+
+        .modal-header {
+            padding: 10px;
+            cursor: move; /* Изменяет курсор на иконку перемещения */
+            color: #fff;
+            background: #333;
+            border-top-left-radius: 5px; /* Скругление углов, если они есть */
+            border-top-right-radius: 5px; /* Скругление углов, если они есть */
+        }
+
+        .taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 90px; /* Обновленная высота панели задач */
+            background-color: #423100; /* Цвет панели задач */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000; /* Убедитесь, что панель задач всегда наверху */
+        }
+
+        .icon-buttons-container {
+            display: flex;
+            gap: 20px; /* Расстояние между иконками */
+            /* Не нужно выравнивать по центру по вертикали, так как это уже сделано в .taskbar */
+        }
+
+        .icon-button {
+            /* Общие стили для иконок */
+            background-size: contain;
+            background-color: rgba(0,0,0,0);
+            width: 48px; /* Общий размер для всех иконок */
+            height: 48px; /* Общий размер для всех иконок */
+            border: none;
+            cursor: pointer;
+            margin-top: calc((90px - 48px) / 2); /* Центрирование иконки внутри панели задач */
+        }
+
+        /* Индивидуальные стили для иконки карт */
+        #maps-button {
+            width: 35px; /* Уменьшенный размер иконки */
+            height: 35px; /* Уменьшенный размер иконки */
+            margin-top: calc((90px - 36px) / 2); /* Центрирование уменьшенной иконки */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <button class="button" id="track-switch-button" style="background-color: rgba(0, 0, 0, 0); border: none;">⏪⏩</button>
+            <div class="button" id="play-pause-button">▶</div>
+            <input type="range" min="0" max="100" value="25" class="slider" id="volume-slider">
+            <div class="value" id="volume-value">25%</div>
+        </div>
+    </div>
+    <div class="taskbar">
+        <div class="icon-buttons-container">
+            <button class="icon-button" id="music-button" style="background-image: url('img/icons/png/music.png');"></button>
+            <button class="icon-button" id="settings-button" style="background-image: url('img/icons/png/settings.png');"></button>
+            <button class="icon-button" id="maps-button" style="background-image: url('img/icons/png/maps.png');"></button> <!-- Новая иконка -->
+        </div>
+    </div>
+
+    <!-- Модальное окно для карты -->
+    <div class="modal" id="modal-maps">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('modal-maps')">&times;</span>
+            <iframe src="https://yandex.ru/map-widget/v1/-/CBucU6V~8B" width="560" height="400" frameborder="0"></iframe>
+        </div>
+    </div>
+
+    <!-- Модальное окно для выбора музыки -->
+    <div class="modal" id="modal-music">
+        <div class="modal-content modal-music-content">
+            <span class="close-button" onclick="closeModal('modal-music')">&times;</span>
+            <h3 class="modal-text">Choose a track:</h3>
+            <div class="modal-text" onclick="changeTrack('track1.mp3')">А у Олигархата</div>
+            <div class="modal-text" onclick="changeTrack('track2.mp3')">Вояж</div>
+            <div class="modal-text" onclick="changeTrack('track3.mp3')">Кабриолет</div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для выбора обоев -->
+    <div class="modal" id="modal-background">
+        <div class="modal-content modal-background-content">
+            <span class="close-button" onclick="closeModal('modal-background')">×</span>
+            <h3 class="modal-text">Choose a background:</h3>
+            <img src="img/background/background1.jpg" onclick="changeBackground('background1.jpg')">
+            <img src="img/background/background3.jpg" onclick="changeBackground('background3.jpg')">
+        </div>
+    </div>
+
+    <script>
+        const audio = new Audio('media/music/track1.mp3');
+        audio.volume = 0.25; // Установка начальной громкости на 25%
+        const playPauseButton = document.getElementById('play-pause-button');
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumeValue = document.getElementById('volume-value');
+        volumeSlider.value = audio.volume * 100; // Синхронизация ползунка с начальной громкостью
+        volumeValue.textContent = `${audio.volume * 100}%`; // Отображение начальной громкости
+
+        const musicButton = document.getElementById('music-button');
+        const settingsButton = document.getElementById('settings-button');
+        const modalMusic = document.getElementById('modal-music');
+        const modalBackground = document.getElementById('modal-background');
+
+        playPauseButton.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play();
+                playPauseButton.textContent = '⏸';
+            } else {
+                audio.pause();
+                playPauseButton.textContent = '▶';
+            }
+        });
+
+        volumeSlider.addEventListener('input', () => {
+            const volume = volumeSlider.value;
+            audio.volume = volume / 100;
+            volumeValue.textContent = `${volume}%`;
+        });
+
+        musicButton.addEventListener('click', () => {
+            modalMusic.style.display = 'flex';
+        });
+
+        settingsButton.addEventListener('click', () => {
+            modalBackground.style.display = 'flex';
+        });
+
+        function changeTrack(trackName) {
+            audio.src = `media/music/${trackName}`;
+            audio.play();
+            playPauseButton.textContent = '⏸';
+            modalMusic.style.display = 'none';
+        }
+
+        function changeBackground(backgroundName) {
+            document.body.style.backgroundImage = `url('img/background/${backgroundName}')`;
+            modalBackground.style.display = 'none';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        const tracks = ['track1.mp3', 'track2.mp3', 'track3.mp3']; // Array of tracks
+        let currentTrackIndex = 0; // Current track index
+
+        // Function to switch to the next track
+        function switchTrack() {
+            currentTrackIndex = (currentTrackIndex + 1) % tracks.length; // Increment and loop back to 0 if at the end
+            audio.src = `media/music/${tracks[currentTrackIndex]}`; // Update the audio source
+            audio.play(); // Play the new track
+            playPauseButton.textContent = '⏸'; // Update the play/pause button
+        }
+
+        const trackSwitchButton = document.getElementById('track-switch-button');
+        trackSwitchButton.addEventListener('click', switchTrack);
+
+        function dragElement(element) {
+    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    
+    if (document.getElementById(element.id + "-header")) {
+        // if present, the header is where you move the DIV from:
+        document.getElementById(element.id + "-header").onmousedown = dragMouseDown;
+    } else {
+        // otherwise, move the DIV from anywhere inside the DIV:
+        element.onmousedown = dragMouseDown;
+    }
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        e.preventDefault();
+        // get the mouse cursor position at startup:
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        // call a function whenever the cursor moves:
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+        // calculate the new cursor position:
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        // set the element's new position:
+        element.style.top = (element.offsetTop - pos2) + "px";
+        element.style.left = (element.offsetLeft - pos1) + "px";
+    }
+
+    function closeDragElement() {
+        // stop moving when mouse button is released:
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+    }
+
+    // Apply the drag function to your modal
+    dragElement(document.getElementById("modal-music"));
+    dragElement(document.getElementById("modal-background"));
+
+    const backgroundToTaskbarColor = {
+        'background1.jpg': '#1a008b',
+        'background3.jpg': '#5500fe'
+        // Добавьте дополнительные пары фон-цвет, если нужно
+    };
+
+    function changeBackground(backgroundName) {
+        // Изменение фона
+        document.body.style.backgroundImage = `url('img/background/${backgroundName}')`;
+        // Изменение цвета панели задач на соответствующий
+        const taskbar = document.querySelector('.taskbar');
+        const color = backgroundToTaskbarColor[backgroundName] || '#423100'; // Цвет по умолчанию, если не найден
+        taskbar.style.backgroundColor = color;
+        
+        // Закрыть модальное окно
+        modalBackground.style.display = 'none';
+    }
+
+    document.getElementById('maps-button').addEventListener('click', function() {
+            document.getElementById('modal-maps').style.display = 'flex';
+        });
+
+        function dragElement(elmnt) {
+    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    
+    // Перемещение модального окна за любую часть модального окна
+    elmnt.onmousedown = dragMouseDown;
+    
+    function dragMouseDown(e) {
+        e = e || window.event;
+        e.preventDefault();
+        // Получить начальные координаты курсора
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        // Вызвать функцию при каждом перемещении курсора
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+        // Вычислить новое положение курсора
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        // Установить новое положение элемента
+        elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+        elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+    }
+
+    function closeDragElement() {
+        // Прекратить перемещение при отпускании кнопки мыши
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
+
+// Применить функцию dragElement к модальному окну для карт
+dragElement(document.getElementById("modal-maps"));
+    </script>
+</body>
+</html>
